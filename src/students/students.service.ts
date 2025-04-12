@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '@prisma/client'; // Importáld a Prisma típusokat
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 
@@ -27,7 +28,7 @@ export class StudentsService {
       include: {
         user: true,
         classTeacher: true,
-        events: true,
+        entryExitEvents: true,
       },
     });
   }
@@ -38,7 +39,7 @@ export class StudentsService {
       include: {
         user: true,
         classTeacher: true,
-        events: true,
+        entryExitEvents: true,
       },
     });
   }
@@ -68,18 +69,23 @@ export class StudentsService {
   }
 
   async findStudentEvents(studentId: number) {
-    return this.prisma.event.findMany({
+    return this.prisma.entryExitEvent.findMany({
       where: { studentId },
       orderBy: { timestamp: 'desc' },
     });
   }
 
-  async addStudentEvent(studentId: number, action: string) {
-    return this.prisma.event.create({
-      data: {
-        studentId,
-        action,
+  async addStudentEvent(studentId: number | null, action: string, userId: number) {
+    const data: Prisma.EntryExitEventCreateInput = {
+      action,
+      user: {
+        connect: { id: userId }, // Hozzáadjuk a kötelező user kapcsolatot
       },
-    });
+      ...(studentId !== null
+        ? { student: { connect: { id: studentId } } }
+        : {}),
+    };
+  
+    return this.prisma.entryExitEvent.create({ data });
   }
 }

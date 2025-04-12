@@ -7,7 +7,9 @@ async function main() {
   const hashedPasswordAdmin = await argon2.hash('adminpassword');
   const hashedPasswordTeacher = await argon2.hash('teacherpassword');
   const hashedPasswordStudent = await argon2.hash('studentpassword');
+  const hashedPasswordPorta = await argon2.hash('portapassword');
 
+  // Admin létrehozása
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@example.com' },
     update: {},
@@ -29,6 +31,7 @@ async function main() {
     },
   });
 
+  // Teacher létrehozása
   const teacherUser = await prisma.user.upsert({
     where: { email: 'teacher@example.com' },
     update: {},
@@ -51,6 +54,7 @@ async function main() {
     },
   });
 
+  // Student létrehozása
   const studentUser = await prisma.user.upsert({
     where: { email: 'student@example.com' },
     update: {},
@@ -76,7 +80,29 @@ async function main() {
     },
   });
 
-  console.log({ admin, teacher, student });
+  // Porta létrehozása
+  const portaUser = await prisma.user.upsert({
+    where: { email: 'porta@example.com' },
+    update: {},
+    create: {
+      email: 'porta@example.com',
+      password: hashedPasswordPorta,
+      role: 'PORTA',
+    },
+  });
+
+  const porta = await prisma.porta.upsert({
+    where: { email: 'porta@example.com' },
+    update: {},
+    create: {
+      name: 'Porta User',
+      email: 'porta@example.com',
+      password: hashedPasswordPorta,
+      userId: portaUser.id,
+    },
+  });
+
+  console.log({ admin, teacher, student, porta });
 }
 
 main()

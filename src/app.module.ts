@@ -7,6 +7,7 @@ import { StudentsModule } from './students/students.module';
 import { EventsModule } from './events/events.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { PortaModule } from './porta/porta.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UsersModule } from './users/users.module';
     EventsModule,
     AuthModule,
     UsersModule,
+    PortaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

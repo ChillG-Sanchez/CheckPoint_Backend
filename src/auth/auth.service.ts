@@ -1,32 +1,37 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
 import * as argon2 from 'argon2';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly usersService: UsersService,
-    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService, // Injektáljuk a PrismaService-t
+    private readonly jwtService: JwtService, // Injektáljuk a JwtService-t
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.usersService.findOneByEmail(email);
-    if (user && await argon2.verify(user.password, password)) {
-      const { password, ...result } = user;
-      return result;
+  async validateUser(email: string, password: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        password: true, // Hash-elt jelszó lekérése
+        role: true,
+      },
+    });
+
+    if (user && (await argon2.verify(user.password, password))) {
+      return user;
     }
     return null;
   }
 
   async login(user: any) {
-    if (!user) {
-      throw new Error('User not found');
-    }
-  
-    const payload = { username: user.email, sub: user.id, role: user.role };
+    const payload = { email: user.email, sub: user.id, role: user.role };
     return {
-      access_token: this.jwtService.sign(payload),
+      accessToken: this.jwtService.sign(payload),
+      role: user.role,
     };
   }
 }
