@@ -13,9 +13,6 @@ export class AuthController {
       return { message: 'Invalid credentials' };
     }
 
-    return {
-      role: user.role,
-      message: 'Login successful',
-    };
+    return this.authService.login(user);
   }
 }

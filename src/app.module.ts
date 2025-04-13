@@ -8,6 +8,7 @@ import { EventsModule } from './events/events.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { PortaModule } from './porta/porta.module';
+import { RegisterModule } from './register/register.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PortaModule } from './porta/porta.module';
     AuthModule,
     UsersModule,
     PortaModule,
+    RegisterModule,
   ],
   controllers: [AppController],
   providers: [AppService],
