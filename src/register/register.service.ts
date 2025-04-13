@@ -1,26 +1,57 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRegisterDto } from './dto/create-register.dto';
-import { UpdateRegisterDto } from './dto/update-register.dto';
+import * as argon2 from 'argon2'; // Importáljuk az argon2-t
 
 @Injectable()
 export class RegisterService {
-  create(createRegisterDto: CreateRegisterDto) {
-    return 'This action adds a new register';
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return `This action returns all register`;
-  }
+  async create(createRegisterDto: CreateRegisterDto) {
+    const { email, password, name } = createRegisterDto;
 
-  findOne(id: number) {
-    return `This action returns a #${id} register`;
-  }
+    // Ellenőrizzük, hogy az email már létezik-e
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
 
-  update(id: number, updateRegisterDto: UpdateRegisterDto) {
-    return `This action updates a #${id} register`;
-  }
+    if (existingUser) {
+      throw new ConflictException('Ez az email cím már használatban van.');
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} register`;
+    // Jelszó hashelése argon2 segítségével
+    const hashedPassword = await argon2.hash(password);
+
+    // Új admin felhasználó létrehozása
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        role: 'ADMIN', // Admin szerepkör beállítása
+      },
+    });
+
+    // Admin adatok mentése az Admin táblába
+    const admin = await this.prisma.admin.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        userId: user.id,
+      },
+    });
+
+    return {
+      message: 'Sikeres regisztráció!',
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      admin: {
+        id: admin.id,
+        name: admin.name,
+      },
+    };
   }
 }

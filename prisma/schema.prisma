@@ -8,81 +8,103 @@ generator client {
 }
 
 model User {
-  id       Int      @id @default(autoincrement())
-  email    String   @unique
-  password String
-  role     Role
-  admin    Admin?
-  teacher  Teacher?
-  student  Student?
-  porta    Porta?
-  entryExitEvents EntryExitEvent[]
-  smokingEvents SmokingEvent[]
+  id                Int               @id @default(autoincrement())
+  email             String            @unique
+  password          String
+  role              Role
+  admin             Admin?
+  teacher           Teacher?
+  student           Student?
+  porta             Porta?
+  entryExitEvents   EntryExitEvent[]
+  smokingEvents     SmokingEvent[]
+  registers         Register[]
 }
 
 model Student {
-  id                Int      @id @default(autoincrement())
+  id                Int               @id @default(autoincrement())
   name              String
   class             String
   classTeacherId    Int
   birthDate         DateTime
-  studentCardNumber String   @unique
-  email             String   @unique
+  studentCardNumber String            @unique
+  email             String            @unique
   password          String
   entryExitEvents   EntryExitEvent[]
-  classTeacher      Teacher  @relation(fields: [classTeacherId], references: [id])
-  user              User     @relation(fields: [userId], references: [id])
-  userId            Int      @unique
+  classTeacher      Teacher           @relation(fields: [classTeacherId], references: [id])
+  user              User              @relation(fields: [userId], references: [id])
+  userId            Int               @unique
 }
 
 model Teacher {
-  id        Int      @id @default(autoincrement())
+  id        Int               @id @default(autoincrement())
   name      String
   class     String
-  email     String   @unique
+  email     String            @unique
   password  String
   students  Student[]
-  user      User     @relation(fields: [userId], references: [id])
-  userId    Int      @unique
+  user      User              @relation(fields: [userId], references: [id])
+  userId    Int               @unique
 }
 
 model Admin {
-  id       Int      @id @default(autoincrement())
+  id       Int               @id @default(autoincrement())
   name     String
-  email    String   @unique
+  email    String            @unique
   password String
-  user     User     @relation(fields: [userId], references: [id])
-  userId   Int      @unique
+  user     User              @relation(fields: [userId], references: [id])
+  userId   Int               @unique
 }
 
 model Porta {
-  id       Int      @id @default(autoincrement())
+  id       Int               @id @default(autoincrement())
   name     String
-  email    String   @unique
+  email    String            @unique
   password String
-  user     User     @relation(fields: [userId], references: [id])
-  userId   Int      @unique
+  user     User              @relation(fields: [userId], references: [id])
+  userId   Int               @unique
   entryExitEvents EntryExitEvent[]
 }
 
 model EntryExitEvent {
-  id        Int      @id @default(autoincrement())
+  id        Int               @id @default(autoincrement())
   userId    Int
   studentId Int?
   portaId   Int?
   action    String
-  timestamp DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
-  student   Student? @relation(fields: [studentId], references: [id])
-  porta     Porta?   @relation(fields: [portaId], references: [id])
+  timestamp DateTime          @default(now())
+  user      User              @relation(fields: [userId], references: [id])
+  student   Student?          @relation(fields: [studentId], references: [id])
+  porta     Porta?            @relation(fields: [portaId], references: [id])
 }
 
 model SmokingEvent {
-  id        Int      @id @default(autoincrement())
+  id        Int               @id @default(autoincrement())
   userId    Int
   startTime DateTime
   endTime   DateTime?
-  user      User     @relation(fields: [userId], references: [id])
+  user      User              @relation(fields: [userId], references: [id])
+}
+
+model Product {
+  id         Int               @id @default(autoincrement())
+  name       String
+  licenseKey String?           @unique
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  registers  Register[]        
+}
+
+model Register {
+  id         Int               @id @default(autoincrement())
+  userId     Int
+  productId  Int
+  licenseKey String?           @unique
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  user       User              @relation(fields: [userId], references: [id])
+  product    Product           @relation(fields: [productId], references: [id])
 }
 
 enum Role {
