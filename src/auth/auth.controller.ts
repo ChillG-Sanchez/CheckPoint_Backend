@@ -19,6 +19,9 @@ export class AuthController {
       throw new UnauthorizedException('Invalid credentials'); // 401-es hibát dobunk
     }
  
-    return this.authService.login(user);
+    return {
+      access_token: this.authService.login(user),
+      role: user.role,
+    };
   }
 }
