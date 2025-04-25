@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
@@ -15,14 +16,13 @@ async function bootstrap() {
     optionsSuccessStatus: 204,
   });
 
-  // Engedélyezzük a JSON törzsek feldolgozását
   app.use(bodyParser.json());
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Csak a DTO-ban definiált mezőket engedélyezi
-      forbidNonWhitelisted: true, // Hibát dob, ha nem definiált mező érkezik
-      transform: true, // Automatikusan átalakítja a bejövő adatokat a DTO típusára
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 
@@ -30,7 +30,6 @@ async function bootstrap() {
   app.setBaseViewsDir(join(__dirname, '..', 'views'));
   app.setViewEngine('ejs');
 
-  // Middleware a beérkező kérések logolásához
   app.use((req, res, next) => {
     console.log('Incoming Request:', {
       method: req.method,
@@ -39,7 +38,17 @@ async function bootstrap() {
     });
     next();
   });
-  
+
+  const config = new DocumentBuilder()
+    .setTitle('CheckPoint API')
+    .setDescription('A CheckPoint rendszer API dokumentációja')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+
   await app.listen(3000);
 }
 bootstrap();
