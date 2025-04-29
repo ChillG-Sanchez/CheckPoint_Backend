@@ -23,31 +23,61 @@ export class EventsService {
     return this.prisma.entryExitEvent.create({ data });
   }
 
-  async findAll() {
+  async findAll(filter?: string) {
+    let where = {};
+
+    if (filter === 'non-smoking') {
+        where = { action: { not: 'smoking' } };
+    } else if (filter === 'smoking') {
+        where = { action: 'smoking' };
+    }
+
     return this.prisma.entryExitEvent.findMany({
-      include: {
-        student: {
-          select: {
-            name: true,
-          },
-        },
-        porta: {
-          select: {
-            name: true,
-          },
-        },
-        user: {
-          select: {
+        where,
+        include: {
             student: {
-              select: {
-                name: true,
-              },
+                select: {
+                    name: true,
+                },
             },
-          },
+            porta: {
+                select: {
+                    name: true,
+                },
+            },
+            user: {
+                select: {
+                    student: {
+                        select: {
+                            name: true,
+                        },
+                    },
+                },
+            },
         },
-      },
     });
-  }
+}
+
+  async findAllSmokingEvents(filter?: string) {
+    let where = {};
+
+    if (filter === 'active') {
+        where = { endTime: null };
+    } else if (filter === 'completed') {
+        where = { endTime: { not: null } };
+    }
+
+    return this.prisma.smokingEvent.findMany({
+        where,
+        include: {
+            user: {
+                select: {
+                    email: true,
+                },
+            },
+        },
+    });
+}
 
   async findOne(id: number) {
     return this.prisma.entryExitEvent.findUnique({

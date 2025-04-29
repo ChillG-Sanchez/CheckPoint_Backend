@@ -29,6 +29,7 @@ export class AuthController {
       access_token: accessToken,
       role: user.role,
       id: user.id,
+      name: user.name,
     };
   }
 }

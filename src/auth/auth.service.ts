@@ -6,8 +6,8 @@ import * as argon2 from 'argon2';
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService, // Injektáljuk a PrismaService-t
-    private readonly jwtService: JwtService, // Injektáljuk a JwtService-t
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -16,13 +16,24 @@ export class AuthService {
       select: {
         id: true,
         email: true,
-        password: true, // Hash-elt jelszó lekérése
+        password: true,
         role: true,
       },
     });
 
     if (user && (await argon2.verify(user.password, password))) {
-      return user;
+      if (user.role === 'ADMIN') {
+        const admin = await this.prisma.admin.findUnique({
+          where: { userId: user.id },
+          select: {
+            name: true,
+          },
+        });
+
+        return { ...user, name: admin?.name || null };
+      }
+
+      return { ...user, name: null };
     }
     return null;
   }
@@ -31,6 +42,9 @@ export class AuthService {
     const payload = { email: user.email, sub: user.id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
+      role: user.role,
+      id: user.id,
+      name: user.name,
     };
   }
 }
