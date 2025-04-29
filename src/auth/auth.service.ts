@@ -20,23 +20,55 @@ export class AuthService {
         role: true,
       },
     });
-
+  
     if (user && (await argon2.verify(user.password, password))) {
-      if (user.role === 'ADMIN') {
-        const admin = await this.prisma.admin.findUnique({
-          where: { userId: user.id },
-          select: {
-            name: true,
-          },
-        });
-
-        return { ...user, name: admin?.name || null };
+      let name: string | null = null;
+  
+      switch (user.role) {
+        case 'ADMIN':
+          const admin = await this.prisma.admin.findUnique({
+            where: { userId: user.id },
+            select: { name: true },
+          });
+          name = admin?.name || null;
+          break;
+  
+        case 'TEACHER':
+          const teacher = await this.prisma.teacher.findUnique({
+            where: { userId: user.id },
+            select: { name: true },
+          });
+          name = teacher?.name || null;
+          break;
+  
+        case 'STUDENT':
+          const student = await this.prisma.student.findUnique({
+            where: { userId: user.id },
+            select: { name: true },
+          });
+          name = student?.name || null;
+          break;
+  
+        case 'PORTA':
+          const porta = await this.prisma.porta.findUnique({
+            where: { userId: user.id },
+            select: { name: true },
+          });
+          name = porta?.name || null;
+          break;
       }
-
-      return { ...user, name: null };
+  
+      return {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name,
+      };
     }
+  
     return null;
   }
+  
 
   async login(user: any) {
     const payload = { email: user.email, sub: user.id, role: user.role };

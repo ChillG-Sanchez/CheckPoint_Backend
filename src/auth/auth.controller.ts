@@ -3,6 +3,7 @@ import { ApiTags, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
+import { access } from 'fs';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -22,14 +23,16 @@ export class AuthController {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { sub: user.id, role: user.role };
-    const accessToken = this.jwtService.sign(payload);
- 
+    const token = this.jwtService.sign({ sub: user.id, role: user.role });
+
     return {
-      access_token: accessToken,
+      access_token: token,
+      token,
       role: user.role,
       id: user.id,
       name: user.name,
+      email: user.email,
     };
   }
+
 }

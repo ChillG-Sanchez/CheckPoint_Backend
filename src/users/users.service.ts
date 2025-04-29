@@ -140,127 +140,148 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    console.log('Frissítendő ID:', id);
-    console.log('Frissítendő adatok:', updateUserDto);
-
     const user = await this.prisma.user.findUnique({
-        where: { id },
-        include: {
-            admin: true,
-            teacher: true,
-            student: true,
-            porta: true,
-        },
+      where: { id },
+      include: {
+        admin: true,
+        teacher: true,
+        student: true,
+        porta: true,
+      },
     });
-
+  
     if (!user) {
-        throw new NotFoundException(`Felhasználó nem található ezzel az ID-val: ${id}`);
+      throw new NotFoundException(`Felhasználó nem található ezzel az ID-val: ${id}`);
     }
-
-    console.log('Felhasználó szerepköre:', user.role);
-
+  
     if (updateUserDto.password) {
-        console.log('Jelszó frissítése');
-        updateUserDto.password = await argon2.hash(updateUserDto.password);
+      updateUserDto.password = await argon2.hash(updateUserDto.password);
     }
-
-    if (updateUserDto.role && updateUserDto.role !== user.role) {
-        console.log(`Szerepkör módosítása: ${user.role} -> ${updateUserDto.role}`);
-
-        if (user.role === 'ADMIN' && user.admin) {
-            await this.prisma.admin.delete({ where: { userId: id } });
-        } else if (user.role === 'TEACHER' && user.teacher) {
-            await this.prisma.teacher.delete({ where: { userId: id } });
-        } else if (user.role === 'STUDENT' && user.student) {
-            await this.prisma.student.delete({ where: { userId: id } });
-        } else if (user.role === 'PORTA' && user.porta) {
-            await this.prisma.porta.delete({ where: { userId: id } });
+  
+    const isRoleChanged = updateUserDto.role && updateUserDto.role !== user.role;
+  
+    if (isRoleChanged) {
+      if (user.role === 'ADMIN' && user.admin) {
+        await this.prisma.admin.delete({ where: { userId: id } });
+      } else if (user.role === 'TEACHER' && user.teacher) {
+        await this.prisma.teacher.delete({ where: { userId: id } });
+      } else if (user.role === 'STUDENT' && user.student) {
+        await this.prisma.student.delete({ where: { userId: id } });
+      } else if (user.role === 'PORTA' && user.porta) {
+        await this.prisma.porta.delete({ where: { userId: id } });
+      }
+  
+      if (updateUserDto.role === 'ADMIN') {
+        await this.prisma.admin.create({
+          data: {
+            name: updateUserDto.name || '',
+            email: updateUserDto.email || user.email,
+            password: updateUserDto.password || user.password,
+            userId: id,
+          },
+        });
+      } else if (updateUserDto.role === 'TEACHER') {
+        await this.prisma.teacher.create({
+          data: {
+            name: updateUserDto.name || '',
+            class: updateUserDto.class || null,
+            email: updateUserDto.email || user.email,
+            password: updateUserDto.password || user.password,
+            userId: id,
+          },
+        });
+      } else if (updateUserDto.role === 'STUDENT') {
+        if (!updateUserDto.class) {
+          throw new BadRequestException('A diákok számára kötelező az osztály megadása.');
         }
-
-        if (updateUserDto.role === 'ADMIN') {
-            await this.prisma.admin.create({
-                data: {
-                    name: updateUserDto.name || user.admin?.name || '',
-                    email: updateUserDto.email || user.email,
-                    password: updateUserDto.password || user.password,
-                    userId: id,
-                },
-            });
-        } else if (updateUserDto.role === 'TEACHER') {
-            await this.prisma.teacher.create({
-                data: {
-                    name: updateUserDto.name || user.teacher?.name || '',
-                    class: updateUserDto.class || user.teacher?.class || null,
-                    email: updateUserDto.email || user.email,
-                    password: updateUserDto.password || user.password,
-                    userId: id,
-                },
-            });
-        } else if (updateUserDto.role === 'STUDENT') {
-            if (!updateUserDto.class) {
-                throw new BadRequestException('A diákok számára kötelező az osztály megadása.');
-            }
-            if (!updateUserDto.birthDate) {
-                throw new BadRequestException('A diákok számára kötelező a születési dátum megadása.');
-            }
-
-            const birthDate = new Date(updateUserDto.birthDate);
-            if (isNaN(birthDate.getTime())) {
-                throw new BadRequestException('A születési dátum érvénytelen.');
-            }
-
-            const classTeacher = await this.prisma.teacher.findFirst({
-                where: { class: updateUserDto.class },
-            });
-
-            if (!classTeacher) {
-                throw new BadRequestException(
-                    `Nem található osztályfőnök a megadott osztályhoz: ${updateUserDto.class}`
-                );
-            }
-
-            await this.prisma.student.create({
-                data: {
-                    name: updateUserDto.name || user.student?.name || '',
-                    class: updateUserDto.class,
-                    classTeacherId: classTeacher.id,
-                    birthDate: birthDate,
-                    studentCardNumber: updateUserDto.studentCardNumber || user.student?.studentCardNumber || null,
-                    email: updateUserDto.email || user.email,
-                    password: updateUserDto.password || user.password,
-                    userId: id,
-                },
-            });
-        } else if (updateUserDto.role === 'PORTA') {
-            await this.prisma.porta.create({
-                data: {
-                    name: updateUserDto.name || user.porta?.name || '',
-                    email: updateUserDto.email || user.email,
-                    password: updateUserDto.password || user.password,
-                    userId: id,
-                },
-            });
+        if (!updateUserDto.birthDate) {
+          throw new BadRequestException('A diákok számára kötelező a születési dátum megadása.');
         }
+  
+        const birthDate = new Date(updateUserDto.birthDate);
+        if (isNaN(birthDate.getTime())) {
+          throw new BadRequestException('A születési dátum érvénytelen.');
+        }
+  
+        const classTeacher = await this.prisma.teacher.findFirst({
+          where: { class: updateUserDto.class },
+        });
+  
+        if (!classTeacher) {
+          throw new BadRequestException(`Nem található osztályfőnök a megadott osztályhoz: ${updateUserDto.class}`);
+        }
+  
+        await this.prisma.student.create({
+          data: {
+            name: updateUserDto.name || '',
+            class: updateUserDto.class,
+            classTeacherId: classTeacher.id,
+            birthDate: birthDate,
+            studentCardNumber: updateUserDto.studentCardNumber || null,
+            email: updateUserDto.email || user.email,
+            password: updateUserDto.password || user.password,
+            userId: id,
+          },
+        });
+      } else if (updateUserDto.role === 'PORTA') {
+        await this.prisma.porta.create({
+          data: {
+            name: updateUserDto.name || '',
+            email: updateUserDto.email || user.email,
+            password: updateUserDto.password || user.password,
+            userId: id,
+          },
+        });
+      }
     }
-
+  
+    if (!isRoleChanged && updateUserDto.name) {
+      switch (user.role) {
+        case 'ADMIN':
+          await this.prisma.admin.update({
+            where: { userId: id },
+            data: { name: updateUserDto.name },
+          });
+          break;
+        case 'TEACHER':
+          await this.prisma.teacher.update({
+            where: { userId: id },
+            data: { name: updateUserDto.name },
+          });
+          break;
+        case 'STUDENT':
+          await this.prisma.student.update({
+            where: { userId: id },
+            data: { name: updateUserDto.name },
+          });
+          break;
+        case 'PORTA':
+          await this.prisma.porta.update({
+            where: { userId: id },
+            data: { name: updateUserDto.name },
+          });
+          break;
+      }
+    }
+  
     const updatedUser = await this.prisma.user.update({
-        where: { id },
-        data: {
-            email: updateUserDto.email,
-            password: updateUserDto.password,
-            role: updateUserDto.role,
-        },
-        include: {
-            admin: true,
-            teacher: true,
-            student: true,
-            porta: true,
-        },
+      where: { id },
+      data: {
+        email: updateUserDto.email,
+        password: updateUserDto.password,
+        role: updateUserDto.role,
+      },
+      include: {
+        admin: true,
+        teacher: true,
+        student: true,
+        porta: true,
+      },
     });
-
-    console.log('Frissített felhasználó:', updatedUser);
+  
     return updatedUser;
-}
+  }
+  
 
   async remove(id: number) {
     const user = await this.prisma.user.findUnique({
