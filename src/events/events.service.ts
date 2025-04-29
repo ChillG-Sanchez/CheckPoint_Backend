@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
-import { Prisma } from '@prisma/client'; // Importáld a Prisma típusokat
+import { Prisma } from '@prisma/client';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 
@@ -13,7 +13,7 @@ export class EventsService {
       action: createEventDto.action,
       timestamp: createEventDto.timestamp || new Date(),
       user: {
-        connect: { id: createEventDto.userId }, // Hozzáadjuk a kötelező user kapcsolatot
+        connect: { id: createEventDto.userId },
       },
       ...(createEventDto.studentId !== undefined && createEventDto.studentId !== null
         ? { student: { connect: { id: createEventDto.studentId } } }
@@ -24,12 +24,55 @@ export class EventsService {
   }
 
   async findAll() {
-    return this.prisma.entryExitEvent.findMany();
+    return this.prisma.entryExitEvent.findMany({
+      include: {
+        student: {
+          select: {
+            name: true,
+          },
+        },
+        porta: {
+          select: {
+            name: true,
+          },
+        },
+        user: {
+          select: {
+            student: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
   }
 
   async findOne(id: number) {
     return this.prisma.entryExitEvent.findUnique({
       where: { id },
+      include: {
+        student: {
+          select: {
+            name: true,
+          },
+        },
+        porta: {
+          select: {
+            name: true,
+          },
+        },
+        user: {
+          select: {
+            student: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 

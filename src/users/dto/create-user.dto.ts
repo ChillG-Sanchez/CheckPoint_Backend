@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { IsString, IsEmail, IsOptional, IsDate, IsEnum, IsNumber } from 'class-validator';
 
 export class CreateUserDto {
@@ -31,6 +32,7 @@ export class CreateUserDto {
   @ApiProperty({ description: 'A felhasználó születési dátuma', required: false })
   @IsOptional()
   @IsDate()
+  @Type(() => Date)
   birthDate?: Date;
 
   @ApiProperty({ description: 'A felhasználó diákigazolványszáma', required: false })
