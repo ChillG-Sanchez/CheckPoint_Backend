@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@n
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { EventRegisterDto } from './dto/event-register.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard/jwt-auth.guard';
 import { ApiTags, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
@@ -49,5 +50,12 @@ export class EventsController {
   @ApiResponse({ status: 404, description: 'Esemény nem található.' })
   remove(@Param('id') id: string) {
     return this.eventsService.remove(+id);
+  }
+
+  @Post('register')
+  @ApiResponse({ status: 201, description: 'Esemény kártyaszám alapján sikeresen regisztrálva.' })
+  @ApiResponse({ status: 404, description: 'Diák nem található.' })
+  registerByCard(@Body() dto: EventRegisterDto) {
+    return this.eventsService.registerByCard(dto);
   }
 }
